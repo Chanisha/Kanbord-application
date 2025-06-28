@@ -4,9 +4,9 @@ import Link from "next/link";
 export default function Home() {
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen bg-white px-4 sm:px-10 md:px-20 lg:px-32 pb-50 gap-8 sm:gap-10 overflow-hidden">
-      <main className="pb-5 sm:pt-10">
+      <div className="pb-5 sm:pt-10">
         <Image src="/logo.svg" alt="" width={140} height={15} priority />
-      </main>
+      </div>
 
       <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold text-center text-black">
         Welcome to Kanbord

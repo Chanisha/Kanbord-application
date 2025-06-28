@@ -9,7 +9,13 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
-import { Calendar as CalendarIcon } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Calendar as CalendarIcon, MoreVertical } from "lucide-react";
 import { format } from "date-fns";
 
 type BoardViewProps = {
@@ -24,54 +30,86 @@ type Task = {
   assignee?: string;
 };
 
-const columnTitles = ["Unassigned", "In Development", "Pending Review", "Done"];
+const listHeaders = ["Unassigned", "In Development", "Pending Review", "Done"];
 
-export default function BoardView({ boardName, goBack }: BoardViewProps) {
-  const [boardData, setBoardData] = useState<Record<string, Task[]>>({
+export default function BoardView({ boardName }: BoardViewProps) {
+  const [columnOrder, setColumnOrder] = useState<string[]>(listHeaders);
+  const [taskColumns, setTaskColumns] = useState<Record<string, Task[]>>({
     Unassigned: [],
     "In Development": [],
     "Pending Review": [],
     Done: [],
   });
 
-  const [showModal, setShowModal] = useState(false);
-  const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
-  const [taskTitle, setTaskTitle] = useState("");
-  const [taskDesc, setTaskDesc] = useState("");
-  const [taskAssignee, setTaskAssignee] = useState("");
-  const [calendarDate, setCalendarDate] = useState<Date | undefined>();
+  const [isModalVisible, toggleModal] = useState(false);
+  const [activeColumn, setActiveColumn] = useState<string | null>(null);
+  const [titleInput, setTitleInput] = useState("");
+  const [descInput, setDescInput] = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const [editIdx, setEditIdx] = useState<number | null>(null);
+  const [openTask, setOpenTask] = useState<{
+    column: string;
+    task: Task;
+  } | null>(null);
 
-  const openModal = (col: string) => {
-    setSelectedColumn(col);
-    setShowModal(true);
-    setTaskTitle("");
-    setTaskDesc("");
-    setTaskAssignee("");
-    setCalendarDate(undefined);
+  const [isEditColumnModalOpen, setEditColumnModalOpen] = useState(false);
+  const [columnToEdit, setColumnToEdit] = useState<string | null>(null);
+  const [columnNameInput, setColumnNameInput] = useState("");
+
+  const handleOpenModal = (
+    columnName: string,
+    taskToPrefill?: Task,
+    taskIndex?: number
+  ) => {
+    setActiveColumn(columnName);
+    toggleModal(true);
+
+    setTitleInput(taskToPrefill?.title || "");
+    setDescInput(taskToPrefill?.description || "");
+    setAssignedTo(taskToPrefill?.assignee || "");
+    setSelectedDate(
+      taskToPrefill?.deadline ? new Date(taskToPrefill.deadline) : undefined
+    );
+    setEditIdx(taskIndex ?? null);
   };
 
-  const addTask = () => {
-    if (!taskTitle.trim()) return;
+  const saveTask = () => {
+    if (!titleInput.trim()) return;
 
-    const deadline = calendarDate ? format(calendarDate, "yyyy-MM-dd") : "";
+    const formattedDeadline = selectedDate
+      ? format(selectedDate, "yyyy-MM-dd")
+      : "";
 
-    const newTask: Task = {
-      title: taskTitle,
-      description: taskDesc,
-      deadline,
-      assignee: taskAssignee,
+    const newEntry: Task = {
+      title: titleInput,
+      description: descInput,
+      deadline: formattedDeadline,
+      assignee: assignedTo,
     };
 
-    setBoardData((prev) => ({
-      ...prev,
-      [selectedColumn!]: [...prev[selectedColumn!], newTask],
-    }));
+    setTaskColumns((prevState) => {
+      const colData = [...prevState[activeColumn!]];
 
-    setShowModal(false);
+      if (editIdx !== null) {
+        colData[editIdx] = newEntry;
+      } else {
+        colData.push(newEntry);
+      }
+
+      return {
+        ...prevState,
+        [activeColumn!]: colData,
+      };
+    });
+
+    toggleModal(false);
+    setEditIdx(null);
   };
 
   return (
     <div className="min-h-screen bg-gray-200">
+      {/* Top Bar */}
       <div className="bg-white border-b">
         <div className="flex justify-end items-center px-4 py-2">
           <div className="flex items-center gap-2 text-sm text-black">
@@ -90,12 +128,7 @@ export default function BoardView({ boardName, goBack }: BoardViewProps) {
           <div className="flex items-center gap-4">
             <h1 className="text-sm font-semibold text-black">{boardName}</h1>
             <div className="flex items-center gap-1 text-blue-600 text-sm cursor-pointer hover:underline">
-              <Image
-                src="/InviteIcon.svg"
-                alt="Invite"
-                width={16}
-                height={16}
-              />
+              <Image src="/InviteIcon.svg" alt="" width={16} height={16} />
               <span>Invite</span>
             </div>
           </div>
@@ -106,30 +139,54 @@ export default function BoardView({ boardName, goBack }: BoardViewProps) {
         </div>
       </div>
 
+      {/* Columns */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 px-4 py-6">
-        {columnTitles.map((colTitle) => {
-          const tasks = boardData[colTitle] || [];
-
+        {columnOrder.map((columnName) => {
+          const tasks = taskColumns[columnName] || [];
           return (
-            <div key={colTitle} className="bg-white rounded-md p-3 shadow-sm">
+            <div key={columnName} className="bg-white rounded-md p-3 shadow-sm">
               <div className="flex justify-between items-center mb-2">
                 <h2 className="text-md font-semibold text-gray-800">
-                  {colTitle}
+                  {columnName}
                 </h2>
-                <span className="text-sm text-gray-500">{tasks.length}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">{tasks.length}</span>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="p-1 hover:bg-gray-100 rounded-full">
+                        <MoreVertical className="w-4 h-4 text-gray-600" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setEditColumnModalOpen(true);
+                          setColumnToEdit(columnName);
+                          setColumnNameInput(columnName);
+                        }}
+                      >
+                        Edit name
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
 
               <div className="flex flex-col gap-2 mb-3">
-                {tasks.map((task, idx) => (
+                {tasks.map((item, i) => (
                   <div
-                    key={`${colTitle}-${idx}`}
-                    className="bg-gray-100 rounded border p-2 text-sm"
+                    key={i}
+                    onClick={() =>
+                      setOpenTask({ column: columnName, task: item })
+                    }
+                    className="cursor-pointer bg-gray-100 rounded border p-2 text-sm hover:bg-gray-200"
                   >
                     <strong className="block mb-1 text-black">
-                      {task.title}
+                      {item.title}
                     </strong>
                     <p className="text-xs text-gray-500 line-clamp-3">
-                      {task.description || "No description"}
+                      {item.description || "No description"}
                     </p>
                   </div>
                 ))}
@@ -137,7 +194,7 @@ export default function BoardView({ boardName, goBack }: BoardViewProps) {
 
               <Button
                 variant="ghost"
-                onClick={() => openModal(colTitle)}
+                onClick={() => handleOpenModal(columnName)}
                 className="bg-blue-100 text-blue-700 hover:text-blue-800 hover:bg-blue-100 text-sm flex items-center gap-1 w-full justify-center font-semibold rounded-md py-2"
               >
                 <span className="text-lg">+</span>
@@ -148,37 +205,33 @@ export default function BoardView({ boardName, goBack }: BoardViewProps) {
         })}
       </div>
 
-      {showModal && (
+      {/* Modal for Task Entry */}
+      {isModalVisible && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-md p-6 w-full max-w-md shadow-lg">
             <h2 className="text-lg text-black mb-4">
-              Add new task to:{" "}
-              <span className=" font-semibold text-black">
-                {selectedColumn}
-              </span>
+              {editIdx !== null ? "Edit task in:" : "Add new task to:"}{" "}
+              <span className="font-semibold text-black">{activeColumn}</span>
             </h2>
 
             <input
               type="text"
-              placeholder="Enter task title"
-              value={taskTitle}
-              onChange={(e) => setTaskTitle(e.target.value)}
-              className="w-full mb-3 px-3 py-2 border rounded focus:outline-none focus:ring-0 placeholder-black border-gray-300 text-black text-sm"
+              placeholder="Enter Task Title"
+              value={titleInput}
+              onChange={(e) => setTitleInput(e.target.value)}
+              className="w-full mb-3 px-3 py-2 border rounded focus:outline-none placeholder-black border-gray-300 text-black text-sm"
             />
 
             <div className="mb-3 relative">
-              <label className="text-sm font-medium text-black block mb-1">
-                Select deadline
-              </label>
               <Popover>
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    className="w-full flex justify-between items-center px-3 py-2 border rounded text-sm text-black border-gray-300 focus:outline-none"
+                    className="w-full flex justify-between items-center px-3 py-2 border rounded text-sm text-black border-gray-300"
                   >
                     <span>
-                      {calendarDate
-                        ? format(calendarDate, "PPP")
+                      {selectedDate
+                        ? format(selectedDate, "MM/dd/yyyy • hh:mmaaa")
                         : "Select deadline"}
                     </span>
                     <CalendarIcon className="h-4 w-4 opacity-50" />
@@ -187,20 +240,19 @@ export default function BoardView({ boardName, goBack }: BoardViewProps) {
                 <PopoverContent className="w-auto p-0 mt-2 z-50" align="start">
                   <Calendar
                     mode="single"
-                    selected={calendarDate}
-                    onSelect={setCalendarDate}
-                    initialFocus
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
                   />
                 </PopoverContent>
               </Popover>
             </div>
 
             <select
-              value={taskAssignee}
-              onChange={(e) => setTaskAssignee(e.target.value)}
-              className="w-full mb-3 px-3 py-2 border rounded text-sm text-black border-gray-300 focus:outline-none"
+              value={assignedTo}
+              onChange={(e) => setAssignedTo(e.target.value)}
+              className="w-full mb-3 px-3 py-2 border rounded text-sm text-black border-gray-300"
             >
-              <option value="">Assign to:</option>
+              <option value="">Assigned to:</option>
               <option value="John">John</option>
               <option value="Jane">Jane</option>
               <option value="Alex">Alex</option>
@@ -208,24 +260,78 @@ export default function BoardView({ boardName, goBack }: BoardViewProps) {
 
             <textarea
               placeholder="Enter description here"
-              value={taskDesc}
-              onChange={(e) => setTaskDesc(e.target.value)}
-              className="w-full mb-4 px-3 py-2 border focus:outline-none focus:ring-0 placeholder-gray-500 border-gray-300 rounded text-black text-sm resize-none h-24"
+              value={descInput}
+              onChange={(e) => setDescInput(e.target.value)}
+              className="w-full px-3 py-2 border placeholder-gray-500 border-gray-300 rounded text-black text-sm resize-none h-24"
             />
 
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2 mt-4">
               <Button
                 variant="ghost"
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  toggleModal(false);
+                  setEditIdx(null);
+                }}
                 className="border w-50 border-gray-300 text-black"
               >
                 Cancel
               </Button>
               <Button
-                onClick={addTask}
-                className="bg-blue-700 w-50 text-white hover:bg-blue-800 disabled:opacity-50"
+                onClick={saveTask}
+                className="bg-blue-700 text-white w-50 hover:bg-blue-800 disabled:opacity-50"
               >
-                Add Task
+                {editIdx !== null ? "Save Changes" : "Add Task"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isEditColumnModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-md shadow-md w-full max-w-sm">
+            <h2 className="text-md font-semibold text-black mb-3">
+              Edit column
+            </h2>
+            <input
+              type="text"
+              value={columnNameInput}
+              onChange={(e) => setColumnNameInput(e.target.value)}
+              className="w-full mb-4 px-3 py-2 border border-gray-300 rounded text-sm text-black"
+              placeholder="Column name goes here"
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                className="border border-gray-300 text-black"
+                onClick={() => setEditColumnModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-blue-600 text-white hover:bg-blue-700"
+                onClick={() => {
+                  if (!columnToEdit || !columnNameInput.trim()) return;
+
+                  setTaskColumns((prev) => {
+                    const updated = { ...prev };
+                    updated[columnNameInput] = updated[columnToEdit];
+                    delete updated[columnToEdit];
+                    return updated;
+                  });
+
+                  setColumnOrder((prev) =>
+                    prev.map((col) =>
+                      col === columnToEdit ? columnNameInput : col
+                    )
+                  );
+
+                  setEditColumnModalOpen(false);
+                  setColumnToEdit(null);
+                  setColumnNameInput("");
+                }}
+              >
+                Save
               </Button>
             </div>
           </div>
