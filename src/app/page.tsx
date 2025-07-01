@@ -13,9 +13,9 @@ export default function Home() {
       </h1>
 
       <Link href="/auth" passHref>
-        <div className="px-5 py-3 bg-blue-600 text-white text-sm sm:text-base font-medium rounded-md hover:bg-blue-700 transition cursor-pointer">
+        <button className="px-5 py-3 bg-blue-600 text-white text-sm sm:text-base font-medium rounded-md hover:bg-blue-700 transition cursor-pointer">
           Continue with Google
-        </div>
+        </button>
       </Link>
 
       <div className="absolute bottom-0 left-0 w-full">
