@@ -22,29 +22,29 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 const taskSchema = z.object({
-  tasktitle: z.string().min(1, "Task Title is required"),
-  taskdescription: z.string().min(1, "Description is required"),
+  taskTitle: z.string().min(1, "Task Title is required"),
+  taskDescription: z.string().min(1, "Description is required"),
   assignedTo: z.string().optional(),
   deadline: z.date().optional(),
 });
 
 type TaskFormData = z.infer<typeof taskSchema>;
 
-type BoardViewProps = {
+interface BoardViewProps {
   boardName: string;
   goBack: () => void;
-};
+}
 
-type Task = {
+interface Task {
   title: string;
   description: string;
   deadline?: string;
   assignee?: string;
-};
+}
 
 const listHeaders = ["Unassigned", "In Development", "Pending Review", "Done"];
 
-export default function BoardView({ boardName }: BoardViewProps) {
+export default function BoardView({ boardName, goBack }: BoardViewProps) {
   const [columnOrder, setColumnOrder] = useState<string[]>(listHeaders);
   const [taskColumns, setTaskColumns] = useState<Record<string, Task[]>>({
     Unassigned: [],
@@ -53,7 +53,7 @@ export default function BoardView({ boardName }: BoardViewProps) {
     Done: [],
   });
 
-  const [isModalVisible, toggleModal] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const [activeColumn, setActiveColumn] = useState<string | null>(null);
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [openTask, setOpenTask] = useState<{
@@ -81,11 +81,11 @@ export default function BoardView({ boardName }: BoardViewProps) {
     taskIndex?: number
   ) => {
     setActiveColumn(columnName);
-    toggleModal(true);
+    setIsModalVisible(true);
     setEditIdx(taskIndex ?? null);
     reset({
-      tasktitle: taskToPrefill?.title || "",
-      taskdescription: taskToPrefill?.description || "",
+      taskTitle: taskToPrefill?.title || "",
+      taskDescription: taskToPrefill?.description || "",
       assignedTo: taskToPrefill?.assignee || "",
       deadline: taskToPrefill?.deadline
         ? new Date(taskToPrefill.deadline)
@@ -95,8 +95,8 @@ export default function BoardView({ boardName }: BoardViewProps) {
 
   const saveTask = handleSubmit((data) => {
     const newEntry: Task = {
-      title: data.tasktitle,
-      description: data.taskdescription,
+      title: data.taskTitle,
+      description: data.taskDescription,
       assignee: data.assignedTo,
       deadline: data.deadline ? format(data.deadline, "yyyy-MM-dd") : "",
     };
@@ -111,7 +111,7 @@ export default function BoardView({ boardName }: BoardViewProps) {
       return { ...prev, [activeColumn!]: colData };
     });
 
-    toggleModal(false);
+    setIsModalVisible(false);
     setEditIdx(null);
   });
 
@@ -241,7 +241,7 @@ export default function BoardView({ boardName }: BoardViewProps) {
 
               <button onClick={() => setOpenTask(null)}>
                 <Image
-                  src="/CloseIcon.svg"
+                  src="/closeIcon.svg"
                   alt=""
                   width={14}
                   height={14}
@@ -288,13 +288,13 @@ export default function BoardView({ boardName }: BoardViewProps) {
             </h2>
 
             <input
-              {...register("tasktitle")}
+              {...register("taskTitle")}
               placeholder="Enter Task Title"
               className="w-full mb-1 px-3 py-2 border rounded placeholder-black border-gray-300 text-black text-sm"
             />
-            {errors.tasktitle && (
+            {errors.taskTitle && (
               <p className="text-red-500 text-xs mb-2">
-                {errors.tasktitle.message}
+                {errors.taskTitle.message}
               </p>
             )}
 
@@ -337,13 +337,13 @@ export default function BoardView({ boardName }: BoardViewProps) {
             </select>
 
             <textarea
-              {...register("taskdescription")}
+              {...register("taskDescription")}
               placeholder="Enter description here"
               className="w-full px-3 py-2 border placeholder-gray-500 border-gray-300 rounded text-black text-sm resize-none h-24"
             />
-            {errors.taskdescription && (
+            {errors.taskDescription && (
               <p className="text-red-500 text-xs mt-1">
-                {errors.taskdescription.message}
+                {errors.taskDescription.message}
               </p>
             )}
 
@@ -351,7 +351,7 @@ export default function BoardView({ boardName }: BoardViewProps) {
               <Button
                 variant="ghost"
                 onClick={() => {
-                  toggleModal(false);
+                  setIsModalVisible(false);
                   setEditIdx(null);
                 }}
                 className="border w-50 border-gray-300 text-black"

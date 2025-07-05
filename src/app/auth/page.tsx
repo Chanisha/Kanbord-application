@@ -26,7 +26,7 @@ export default function AuthPage() {
         <div className="flex items-center justify-center mb-8">
           <Image
             src="/logo.svg"
-            alt="Logo"
+            alt=""
             width={140}
             height={15}
             className="pl-2 pr-5"
@@ -89,7 +89,7 @@ export default function AuthPage() {
               John Doe
               <Image
                 src="/Avatar.svg"
-                alt="User Avatar"
+                alt=""
                 width={20}
                 height={20}
                 className="h-7 w-7"
@@ -132,7 +132,7 @@ export default function AuthPage() {
                       <div className="flex font-semibold gap-4">
                         <div className="flex items-center gap-1 cursor-pointer text-blue-600 hover:underline">
                           <Image
-                            src="/InviteIcon.svg"
+                            src="/inviteIcon.svg"
                             alt=""
                             width={16}
                             height={16}
@@ -141,7 +141,7 @@ export default function AuthPage() {
                         </div>
                         <div className="flex items-center gap-1 cursor-pointer text-blue-600 hover:underline">
                           <Image
-                            src="/EditIcon.svg"
+                            src="/editIcon.svg"
                             alt=""
                             width={16}
                             height={16}
