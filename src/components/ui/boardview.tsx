@@ -20,6 +20,7 @@ import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import Navbar from "./navbar";
 
 const taskSchema = z.object({
   taskTitle: z.string().min(1, "Task Title is required"),
@@ -119,16 +120,7 @@ export default function BoardView({ boardName, goBack }: BoardViewProps) {
     <div className="min-h-screen bg-gray-200">
       <div className="bg-white border-b">
         <div className="flex justify-end items-center px-4 py-2">
-          <div className="flex items-center gap-2 text-sm text-black">
-            John Doe
-            <Image
-              src="/Avatar.svg"
-              alt=""
-              width={24}
-              height={24}
-              className="rounded-full"
-            />
-          </div>
+          <Navbar />
         </div>
 
         <div className="flex justify-between items-center px-4 py-3 border-t">
