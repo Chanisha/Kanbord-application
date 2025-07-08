@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
+import Navbar from "@/components/ui/navbar";
 import { cn } from "@/lib/utils";
 import BoardView from "@/components/ui/boardview";
 
@@ -85,16 +86,7 @@ export default function AuthPage() {
       ) : (
         <div className="flex flex-col flex-1">
           <header className="h-16 bg-white border-b flex justify-end items-center px-4 sm:px-6">
-            <div className="flex items-center text-black gap-2 text-sm font-medium">
-              John Doe
-              <Image
-                src="/Avatar.svg"
-                alt=""
-                width={20}
-                height={20}
-                className="h-7 w-7"
-              />
-            </div>
+            <Navbar />
           </header>
 
           <main className="flex-1 bg-gray-100 px-4 py-6">
