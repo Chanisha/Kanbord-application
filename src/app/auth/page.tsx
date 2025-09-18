@@ -1,18 +1,60 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/ui/navbar";
 import { cn } from "@/lib/utils";
 import BoardView from "@/components/ui/boardview";
+import { apiService, User } from "@/lib/api";
 
 export default function AuthPage() {
   const [showModal, setShowModal] = useState(false);
   const [newBoardName, setNewBoardName] = useState("");
   const [boardList, updateBoardList] = useState<string[]>([]);
   const [activeBoard, setActiveBoard] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load user from localStorage on component mount
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        if (token) {
+          const response = await apiService.getCurrentUser();
+          setUser(response.user);
+        } else {
+          // No token, redirect to home
+          window.location.href = "/";
+        }
+      } catch (error) {
+        console.error("Failed to load user:", error);
+        // Token might be invalid, redirect to home
+        window.location.href = "/";
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUser();
+  }, []);
+
+  // Set a default board if none exists
+  useEffect(() => {
+    if (boardList.length === 0) {
+      updateBoardList(["My Tasks"]);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    apiService.logout();
+    setUser(null);
+    setActiveBoard(null);
+    // Redirect to home page
+    window.location.href = "/";
+  };
 
   const createBoard = () => {
     if (newBoardName.trim() === "") return;
@@ -21,20 +63,26 @@ export default function AuthPage() {
     setShowModal(false);
   };
 
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If no user, don't render anything (will redirect)
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="flex flex-col min-h-screen md:flex-row">
       <aside className="w-full md:w-64 bg-white border-b md:border-r md:border-b-0 py-4 px-0 flex flex-col items-center md:items-stretch">
-        <div className="flex items-center justify-center mb-8">
-          <Image
-            src="/logo.svg"
-            alt=""
-            width={140}
-            height={15}
-            className="pl-2 pr-5"
-            priority
-          />
-        </div>
-
         <nav className="flex flex-col gap-2 md:space-y-2 px-4">
           <SidebarLink
             icon={
@@ -81,12 +129,13 @@ export default function AuthPage() {
           <BoardView
             boardName={activeBoard}
             goBack={() => setActiveBoard(null)}
+            {...({ user } as any)}
           />
         </div>
       ) : (
         <div className="flex flex-col flex-1">
           <header className="h-16 bg-white border-b flex justify-end items-center px-4 sm:px-6">
-            <Navbar />
+            <Navbar user={user} onLogout={handleLogout} />
           </header>
 
           <main className="flex-1 bg-gray-100 px-4 py-6">
